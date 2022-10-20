@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
-import { MailerModule as NodeMailerModule, MailerService } from '@nestjs-modules/mailer';
+import { MailerModule as NodeMailerModule } from '@nestjs-modules/mailer';
+import { MailerService } from './mailer.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MailerProcessor } from './mailer.processor';
 
 @Module({
-  providers: [],
+  providers: [MailerService, MailerProcessor],
+  // controllers: [MailerProcessor],
   exports: [],
   imports: [
     NodeMailerModule.forRootAsync({

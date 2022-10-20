@@ -1,17 +1,19 @@
 import { MailerService as NodeMailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
+import { Mail } from './mailer.types';
 
 @Injectable()
 export class MailerService {
   constructor(private readonly mailerService: NodeMailerService) {}
 
-  async send(): Promise<void> {
+  async send(data: Mail): Promise<void> {
     const info = await this.mailerService.sendMail({
-      to: 'smrnvbrs@gmail.com', // list of receivers
-      from: 'lawcalc@mail.ru', // sender address
-      subject: 'Testing Nest MailerModuleeee 123123123 ✔', // Subject line
-      text: 'welcome', // plaintext body
-      html: '<b>welcome</b>', // HTML body content
+      to: data.to, // list of receivers
+      from: data.from,
+      subject: data.subject,
+      text: data.text,
+      html: data.html,
     });
+    return info;
   }
 }

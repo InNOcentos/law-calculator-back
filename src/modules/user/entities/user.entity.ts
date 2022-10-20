@@ -20,4 +20,12 @@ export class UserEntity {
     nullable: true,
   })
   password?: string;
+
+  @Exclude()
+  @Column('varchar', {
+    comment: 'Рефреш токен',
+    name: 'refresh_token',
+    nullable: true,
+  })
+  refreshToken?: string;
 }
