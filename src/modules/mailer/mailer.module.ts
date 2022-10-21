@@ -3,6 +3,9 @@ import { MailerModule as NodeMailerModule } from '@nestjs-modules/mailer';
 import { MailerService } from './mailer.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerProcessor } from './mailer.processor';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { BullModule } from '@nestjs/bull';
+import { MAIL_QUEUE_NAME } from '../app.types';
 
 @Module({
   providers: [MailerService, MailerProcessor],
@@ -22,8 +25,15 @@ import { MailerProcessor } from './mailer.processor';
             pass: config.get('mailer.password'),
           },
         },
+        template: {
+          dir: __dirname + '/templates',
+          adapter: new HandlebarsAdapter(),
+          options: {
+            strict: true,
+          },
+        },
         defaults: {
-          from: `"nest-modulessdadas" <${config.get('mailer.user')}>`,
+          from: config.get('mailer.user'),
         },
       }),
     }),

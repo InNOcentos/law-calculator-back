@@ -1,42 +1,44 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpException, Param, Post, Req, UseFilters } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dtos/auth.dto';
-import { CreateUserDto } from './dtos/create-user.dto';
-import { JwtAuthGuard } from '../common/guards/auth.guard';
-import { RefreshTokenGuard } from '../common/guards/refresh-token.guard';
+import { JwtAuthGuard, RefreshAuthGuard } from '../common/guards/auth.guard';
+import { AuthTokens } from './auth.type';
+import { ApiTags } from '@nestjs/swagger';
+import { CreateAccountDto } from './dtos/create-account.dto';
 
 @Controller('auth')
+@ApiTags('Авторизация/Регистрация')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('signup')
-  signUp(@Body() createUserDto: CreateUserDto): Promise<Record<string, string>> {
-    return this.authService.signUp(createUserDto);
+  signUp(@Body() createAccountDto: CreateAccountDto): Promise<void> {
+    return this.authService.signUp(createAccountDto);
   }
 
   @Post('signin')
-  signIn(@Body() data: AuthDto): Promise<Record<string, string>> {
+  signIn(@Body() data: AuthDto): Promise<AuthTokens> {
     return this.authService.signIn(data);
   }
 
   @JwtAuthGuard()
   @Get('logout')
   async logOut(@Req() req: Request): Promise<void> {
-    this.authService.logout(req.user['sub']);
+    return this.authService.logout(req.user['sub']);
   }
 
-  @UseGuards(RefreshTokenGuard)
+  @RefreshAuthGuard()
   @Get('refresh')
-  refreshTokens(@Req() req: Request): Promise<Record<string, string>> {
-    const userId = req.user['sub'];
+  refreshTokens(@Req() req: Request): Promise<AuthTokens> {
+    const accountId = req.user['sub'];
     const refreshToken = req.user['refreshToken'];
-    return this.authService.refreshTokens(userId, refreshToken);
+    return this.authService.refreshTokens(accountId, refreshToken);
   }
 
   @Get(':code/confirm')
-  verify(@Param('code') code: string): string {
-    return 'works';
+  confirm(@Param('code') codeHash: string): Promise<AuthTokens> {
+    return this.authService.confirm(codeHash);
   }
 
   @JwtAuthGuard()

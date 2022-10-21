@@ -4,15 +4,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import Configuration from './app.config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { databaseOptionsFactory } from './database/options/factory';
-import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { BullModule } from '@nestjs/bull';
 import { MAIL_QUEUE_NAME } from './app.types';
+import { AccountModule } from './account/account.module';
+import { APP_FILTER } from '@nestjs/core';
+import { ApplicationExceptionFilter } from './common/filters/application.filter';
 
 @Module({
   imports: [
-    BullModule.registerQueueAsync({
-      name: MAIL_QUEUE_NAME,
+    BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         redis: {
@@ -30,9 +31,10 @@ import { MAIL_QUEUE_NAME } from './app.types';
       useFactory: (config: ConfigService) => databaseOptionsFactory(config),
     }),
     MailerModule,
-    UserModule,
+    AccountModule,
     AuthModule,
     MailerModule,
   ],
+  providers: [{ provide: APP_FILTER, useClass: ApplicationExceptionFilter }],
 })
 export class AppModule {}

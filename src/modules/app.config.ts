@@ -13,7 +13,7 @@ export default (): Record<string, any> => ({
     httpPrefix: process.env.HTTP_PREFIX,
     httpHost: process.env.HTTP_HOST,
     httpVersion: process.env.HTTP_VERSION,
-    seriviceName: process.env.SERVICE_NAME,
+    serviceName: process.env.SERVICE_NAME,
   },
   database: {
     type: process.env.DATABASE_TYPE,

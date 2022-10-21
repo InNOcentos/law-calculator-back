@@ -5,3 +5,7 @@ export type Mail = {
   text: string;
   html: string;
 };
+
+export enum MailerProcess {
+  Confirmation = 'confirmation',
+}

@@ -3,47 +3,59 @@ import { OnQueueActive, OnQueueCompleted, OnQueueFailed, Process, Processor } fr
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { MAIL_QUEUE_NAME } from '../app.types';
-import { UserEntity } from '../user/entities/user.entity';
+import { MailerProcess } from './mailer.types';
+import { ConfigService } from '@nestjs/config';
+import { plainToClass } from 'class-transformer';
+import { AccountEntity } from '../account/entities/account.entity';
 
 @Processor(MAIL_QUEUE_NAME)
 export class MailerProcessor {
-  constructor(private readonly mailerService: MailerService) {}
+  constructor(private readonly mailerService: MailerService, private readonly configService: ConfigService) {}
   private readonly logger = new Logger(this.constructor.name);
 
   @OnQueueActive()
-  onActive(job: Job) {
+  onActive(job: Job): void {
     this.logger.debug(`Processing job ${job.id} of type ${job.name}. Data: ${JSON.stringify(job.data)}`);
   }
 
   @OnQueueCompleted()
-  onComplete(job: Job, result: any) {
+  onComplete(job: Job, result: any): void {
     this.logger.debug(`Completed job ${job.id} of type ${job.name}. Result: ${JSON.stringify(result)}`);
   }
 
   @OnQueueFailed()
-  onError(job: Job<any>, error: any) {
+  onError(job: Job<any>, error: any): void {
     this.logger.error(`Failed job ${job.id} of type ${job.name}: ${error.message}`, error.stack);
   }
 
-  @Process('confirmation')
-  async sendConfirmationEmail(job: Job<{ user: UserEntity; code: string }>): Promise<any> {
-    this.logger.log(`Sending confirmation email to '${job.data.user.email}'`);
+  @Process(MailerProcess.Confirmation)
+  async sendConfirmationEmail(job: Job<{ account: AccountEntity; code: string }>): Promise<any> {
+    this.logger.log(`Sending confirmation email to '${job.data.account.email}'`);
 
-    const url = `http://localhost:3000/api/auth/${job.data.code}/confirm`;
+    let url;
+
+    if (this.configService.get('NODE_ENV') === 'local') {
+      url = `http://${this.configService.get('app.httpHost')}:${this.configService.get('app.httpPort')}${this.configService.get(
+        'app.httpPrefix',
+      )}/auth/${job.data.code}/confirm`;
+    } else {
+      url = `https://${this.configService.get('app.httpHost')}${this.configService.get('app.httpPrefix')}/auth/${job.data.code}/confirm`;
+    }
 
     try {
-      const info = await this.mailerService.send({
-        to: job.data.user.email, // list of receivers
-        from: 'lawcalc@mail.ru', // sender address
-        subject: 'Welcome to Law calc Please Confirm Your Email Address', // Subject line
-        text: `Verify your email: ${url}`, // plaintext body
-        html: `<b>Verify your email: ${url}</b>`, // HTML body content
+      const mail = await this.mailerService.send({
+        template: MailerProcess.Confirmation,
+        context: {
+          ...plainToClass(AccountEntity, job.data.account),
+          url: url,
+        },
+        subject: `Добро пожаловать в ${this.configService.get('app.serviceName')}! Пожалуйста, подтвердите ваш адрес электронной почты.`,
+        to: job.data.account.email,
       });
-      console.log(info);
 
-      return info;
+      return mail;
     } catch (error) {
-      this.logger.error(`Failed to send confirmation email to '${job.data.user.email}'`, error.stack);
+      this.logger.error(`Failed to send confirmation email to '${job.data.account.email}'`, error.stack);
       throw error;
     }
   }

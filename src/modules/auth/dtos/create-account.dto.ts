@@ -1,13 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsEmail, IsString } from 'class-validator';
 
-export class CreateUserDto {
+export class CreateAccountDto {
   @ApiProperty({
     description: 'Почта',
     type: String,
     required: true,
   })
   @IsString()
+  @IsEmail()
   email: string;
 
   @ApiProperty({

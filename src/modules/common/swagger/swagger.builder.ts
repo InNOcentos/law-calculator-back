@@ -15,7 +15,7 @@ export const SwaggerBuilder = (application: INestApplication, config: ConfigServ
   }
 
   const documentationBuilder = new DocumentBuilder()
-    .setTitle(`${config.get('app.seriviceName')} ${getPackageVersion()}`)
+    .setTitle(`${config.get('app.serviceName')} ${getPackageVersion()}`)
     .setDescription('REST API Documentation')
     .setVersion(`${config.get('app.httpVersion')}`)
     .addServer(serverUrl)
