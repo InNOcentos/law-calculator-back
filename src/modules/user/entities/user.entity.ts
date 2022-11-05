@@ -1,9 +1,9 @@
 import { Exclude } from 'class-transformer';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { AccountStatus } from '../account.types';
+import { UserStatus } from '../user.types';
 
-@Entity({ name: 'accounts' })
-export class AccountEntity {
+@Entity({ name: 'users' })
+export class UserEntity {
   @PrimaryGeneratedColumn('uuid', {
     name: 'id',
   })
@@ -27,10 +27,10 @@ export class AccountEntity {
     comment: 'Статус пользователя',
     name: 'status',
     nullable: true,
-    default: AccountStatus.Unconfirmed,
-    enum: AccountStatus,
+    default: UserStatus.Unconfirmed,
+    enum: UserStatus,
   })
-  status?: AccountStatus;
+  status?: UserStatus;
 
   @Exclude()
   @Column('varchar', {

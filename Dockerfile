@@ -2,13 +2,9 @@ FROM node:16
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY ["package.json", "package-lock.json",".env", "tsconfig.json", "tsconfig.build.json", "nest-cli.json", "./"]
 
 RUN npm ci
 
-COPY . .
-
-RUN npm run build
-
 EXPOSE 3000
-CMD [ "node", "dist/main.js" ]
+CMD npm run start

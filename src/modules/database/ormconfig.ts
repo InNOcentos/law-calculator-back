@@ -2,7 +2,7 @@ import { DataSource } from 'typeorm';
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import migrations from './migrations';
-import { AccountEntity } from '../account/entities/account.entity';
+import { UserEntity } from '../user/entities/user.entity';
 
 function strict(name): string | undefined {
   if (!process.env[name]) {
@@ -29,7 +29,7 @@ export default new DataSource({
   database: strict('DATABASE_DATABASE'),
   port: +strict('DATABASE_PORT'),
   synchronize: false,
-  entities: [AccountEntity],
+  entities: [UserEntity],
   migrations,
   migrationsRun: true,
   migrationsTableName: process.env.DATABASE_MIGRATIONS_TABLE_NAME,

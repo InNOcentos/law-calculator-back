@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -9,80 +9,98 @@ import { MAIL_QUEUE_NAME } from '../app.types';
 import { Queue } from 'bull';
 import * as crypto from 'crypto';
 import { MailerProcess } from '../mailer/mailer.types';
-import { AuthTokens } from './auth.type';
-import { AccountService } from '../account/account.service';
-import { AccountStatus } from '../account/account.types';
-import { CreateAccountDto } from './dtos/create-account.dto';
+import { AuthTokens, JwtPayload, SignupResponse, UserConfirmed } from './auth.type';
+import { UserService } from '../user/user.service';
+import { UserStatus } from '../user/user.types';
+import { CreateUserDto } from './dtos/create-user.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private accountService: AccountService,
+    private userService: UserService,
     private jwtService: JwtService,
     private configService: ConfigService,
     @InjectQueue(MAIL_QUEUE_NAME)
     private mailQueue: Queue,
   ) {}
-  async signUp(createAccountDto: CreateAccountDto): Promise<void> {
-    const accountExists = await this.accountService.findOne({ email: createAccountDto.email });
-    if (accountExists) {
+
+  async signUp(createUserDto: CreateUserDto): Promise<AuthTokens> {
+    const userExists = await this.userService.findOne({ email: createUserDto.email });
+    if (userExists) {
       throw new BadRequestException('Пользователь с таким почтовым адресом уже зарегистрирован');
     }
 
-    const passwordHash = await this.hashData(createAccountDto.password);
+    const passwordHash = await this.hashData(createUserDto.password);
 
     const mailHash = crypto.createHash('sha1').update(crypto.randomBytes(30).toString('hex')).digest('hex');
-    const account = await this.accountService.save({
+    const user = await this.userService.save({
       codeHash: mailHash,
-      email: createAccountDto.email,
+      email: createUserDto.email,
       passwordHash,
     });
 
-    console.log('sending to queue...')
-    await this.mailQueue.add(MailerProcess.Confirmation, {
-      account,
-      code: mailHash,
-    });
-    console.log('done')
-  }
-
-  async confirm(codeHash: string): Promise<AuthTokens> {
-    const account = await this.accountService.findOne({ codeHash });
-
-    if (!account) {
-      throw new BadRequestException('Пользователь не найден');
+    try {
+      await this.mailQueue.add(MailerProcess.Confirmation, {
+        user,
+        code: mailHash,
+      });
+    } catch (err) {
+      console.log(err);
+      await this.userService.delete({ email: createUserDto.email });
+      throw new BadRequestException('Произошла неизвестная ошибка. Попробуйте позднее');
     }
 
-    const tokens = await this.getTokens({ sub: account.id, email: account.email });
+    const tokens = await this.getTokens({ sub: user.id, email: user.email });
     const hashedRefreshToken = await this.hashRefreshToken(tokens.refreshToken);
 
-    account.status = AccountStatus.Confirmed;
-    account.refreshToken = hashedRefreshToken;
-    account.codeHash = null;
+    user.refreshToken = hashedRefreshToken;
 
-    await this.accountService.update(account);
+    await this.userService.update(user);
 
     return tokens;
+  }
+
+  async confirm(codeHash: string): Promise<UserConfirmed> {
+    const user = await this.userService.findOne({ codeHash });
+
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    user.status = UserStatus.Confirmed;
+    user.codeHash = null;
+
+    try {
+      await this.userService.update(user);
+    } catch (err) {
+      return {
+        userConfirmed: false,
+      };
+    }
+
+    return {
+      userConfirmed: true,
+    };
   }
 
   async signIn(data: AuthDto): Promise<AuthTokens> {
-    const account = await this.accountService.findOne({ email: data.email });
-    if (!account) throw new BadRequestException('Пользователь не найден');
+    const user = await this.userService.findOne({ email: data.email });
+    if (!user) throw new NotFoundException('Пользователь не найден');
 
-    const passwordMatches = await argon2.verify(account.password, data.password);
-    if (!passwordMatches) throw new BadRequestException('Пользователь не найден');
+    const passwordMatches = await argon2.verify(user.password, data.password);
+    if (!passwordMatches) throw new NotFoundException('Пользователь не найден');
 
-    const tokens = await this.getTokens({ sub: account.id, email: account.email });
+    const tokens = await this.getTokens({ sub: user.id, email: user.email });
 
     const hashedRefreshToken = await this.hashRefreshToken(tokens.refreshToken);
 
-    account.refreshToken = hashedRefreshToken;
-    await this.accountService.update(account);
+    user.refreshToken = hashedRefreshToken;
+    await this.userService.update(user);
     return tokens;
   }
 
-  async logout(accountId: string): Promise<void> {
-    await this.accountService.update({ id: accountId, refreshToken: null });
+  async logout(userId: string): Promise<void> {
+    await this.userService.update({ id: userId, refreshToken: null });
   }
 
   async hashRefreshToken(refreshToken: string): Promise<string> {
@@ -102,29 +120,30 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(accountId: string, refreshToken: string): Promise<AuthTokens> {
-    const account = await this.accountService.findOne({ id: accountId });
-    if (!account || !account.refreshToken) throw new ForbiddenException('Нет доступа');
-    const refreshTokenMatches = await argon2.verify(account.refreshToken, refreshToken);
+  async refreshTokens(userId: string, refreshToken: string): Promise<AuthTokens> {
+    const user = await this.userService.findOne({ id: userId });
+    if (!user || !user.refreshToken) throw new ForbiddenException('Нет доступа');
+    const refreshTokenMatches = await argon2.verify(user.refreshToken, refreshToken);
     if (!refreshTokenMatches) throw new ForbiddenException('Нет доступа');
 
-    const tokens = await this.getTokens({ sub: account.id, email: account.email });
+    const tokens = await this.getTokens({ sub: user.id, email: user.email });
     const hashedRefreshToken = await this.hashRefreshToken(tokens.refreshToken);
 
-    account.refreshToken = hashedRefreshToken;
-    await this.accountService.update(account);
+    user.refreshToken = hashedRefreshToken;
+    await this.userService.update(user);
 
     return tokens;
   }
 
-  async getTokens(payload: { sub: string; email: string }): Promise<AuthTokens> {
+  async getTokens(payload: JwtPayload): Promise<AuthTokens> {
+    console.log(this.configService.get('jwt'));
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('jwt.secret'),
+        secret: this.configService.get<string>('jwt.accessSecret'),
         expiresIn: this.configService.get<string>('jwt.accessExp'),
       }),
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('jwt.secret'),
+        secret: this.configService.get<string>('jwt.refreshSecret'),
         expiresIn: this.configService.get<string>('jwt.refreshExp'),
       }),
     ]);

@@ -7,7 +7,7 @@ import { databaseOptionsFactory } from './database/options/factory';
 import { AuthModule } from './auth/auth.module';
 import { BullModule } from '@nestjs/bull';
 import { MAIL_QUEUE_NAME } from './app.types';
-import { AccountModule } from './account/account.module';
+import { UserModule } from './user/user.module';
 import { APP_FILTER } from '@nestjs/core';
 import { ApplicationExceptionFilter } from './common/filters/application.filter';
 
@@ -31,7 +31,7 @@ import { ApplicationExceptionFilter } from './common/filters/application.filter'
       useFactory: (config: ConfigService) => databaseOptionsFactory(config),
     }),
     MailerModule,
-    AccountModule,
+    UserModule,
     AuthModule,
     MailerModule,
   ],

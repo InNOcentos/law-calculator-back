@@ -27,7 +27,8 @@ export default (): Record<string, any> => ({
     migrationsTableName: process.env.DATABASE_MIGRATIONS_TABLE_NAME,
   },
   jwt: {
-    secret: process.env.JWT_SECRET,
+    accessSecret: process.env.ACCESS_JWT_SECRET,
+    refreshSecret: process.env.REFRESH_JWT_SECRET,
     alg: process.env.JWT_ALG,
     iss: process.env.JWT_ISS,
     aud: process.env.JWT_AUD,

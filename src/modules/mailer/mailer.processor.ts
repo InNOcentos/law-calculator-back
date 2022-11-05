@@ -6,7 +6,7 @@ import { MAIL_QUEUE_NAME } from '../app.types';
 import { MailerProcess } from './mailer.types';
 import { ConfigService } from '@nestjs/config';
 import { plainToClass } from 'class-transformer';
-import { AccountEntity } from '../account/entities/account.entity';
+import { UserEntity } from '../user/entities/user.entity';
 
 @Processor(MAIL_QUEUE_NAME)
 export class MailerProcessor {
@@ -29,8 +29,8 @@ export class MailerProcessor {
   }
 
   @Process(MailerProcess.Confirmation)
-  async sendConfirmationEmail(job: Job<{ account: AccountEntity; code: string }>): Promise<any> {
-    this.logger.log(`Sending confirmation email to '${job.data.account.email}'`);
+  async sendConfirmationEmail(job: Job<{ user: UserEntity; code: string }>): Promise<any> {
+    this.logger.log(`Sending confirmation email to '${job.data.user.email}'`);
 
     let url;
 
@@ -46,16 +46,16 @@ export class MailerProcessor {
       const mail = await this.mailerService.send({
         template: MailerProcess.Confirmation,
         context: {
-          ...plainToClass(AccountEntity, job.data.account),
+          ...plainToClass(UserEntity, job.data.user),
           url: url,
         },
         subject: `Добро пожаловать в ${this.configService.get('app.serviceName')}! Пожалуйста, подтвердите ваш адрес электронной почты.`,
-        to: job.data.account.email,
+        to: job.data.user.email,
       });
 
       return mail;
     } catch (error) {
-      this.logger.error(`Failed to send confirmation email to '${job.data.account.email}'`, error.stack);
+      this.logger.error(`Failed to send confirmation email to '${job.data.user.email}'`, error.stack);
       throw error;
     }
   }

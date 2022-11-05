@@ -1,3 +1,3 @@
-import { AddAccount1666347766916 } from './1666347766916-AddAccount';
+import { AddUser1666347766916 } from './1666347766916-AddUser';
 
-export default [AddAccount1666347766916];
+export default [AddUser1666347766916];

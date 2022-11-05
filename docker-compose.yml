@@ -34,15 +34,13 @@ services:
     container_name: app
     restart: unless-stopped
     env_file: .env
+    volumes:
+      - ./src:/app/src
     depends_on:
       - postgres
       - redis
     ports:
       - '3000:3000'
-    # volumes:
-    #   - .:/app
-    #   # - ./app/node_modules # This is the only change
-    command: npm run start
     networks:
       - app-network
 

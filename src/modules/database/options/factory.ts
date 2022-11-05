@@ -2,7 +2,7 @@ import migrations from '../migrations';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
-import { AccountEntity } from '../../account/entities/account.entity';
+import { UserEntity } from '../../user/entities/user.entity';
 
 export const databaseOptionsFactory = (config: ConfigService): TypeOrmModuleOptions & PostgresConnectionOptions => ({
   type: config.get<any>('database.type'),
@@ -14,7 +14,7 @@ export const databaseOptionsFactory = (config: ConfigService): TypeOrmModuleOpti
   logging: config.get<string>('database.logging') === 'true',
   synchronize: false,
   migrationsRun: true,
-  entities: [AccountEntity],
+  entities: [UserEntity],
   migrationsTableName: config.get<string>('database.migrationsTableName'),
   migrations,
   autoLoadEntities: true,
