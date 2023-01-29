@@ -2,9 +2,16 @@ FROM node:16
 
 WORKDIR /app
 
-COPY ["package.json", "package-lock.json",".env", "tsconfig.json", "tsconfig.build.json", "nest-cli.json", "./"]
+COPY ["package.json", "package-lock.json",".env", "tsconfig.json", "nest-cli.json", "./"]
 
-RUN npm ci
+RUN npm install rimraf
 
-EXPOSE 3000
-CMD npm run start
+RUN npm install -g @nestjs/cli
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+CMD npm run start:dev

@@ -54,8 +54,8 @@ export class MailerProcessor {
       });
 
       return mail;
-    } catch (error) {
-      this.logger.error(`Failed to send confirmation email to '${job.data.user.email}'`, error.stack);
+    } catch (error: unknown) {
+      this.logger.error(`Failed to send confirmation email to '${job.data.user.email}'`);
       throw error;
     }
   }

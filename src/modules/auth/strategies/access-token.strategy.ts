@@ -16,6 +16,10 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
   async validate(payload: JwtPayload): Promise<JwtPayload> {
     const user = await this.userService.findOne({ email: payload.email });
 
+    if (!user) {
+      throw new ForbiddenException('Аккаунт не найден.');
+    }
+
     if (user.status !== UserStatus.Confirmed) {
       throw new ForbiddenException('Аккаунт не подтвержден. Перейдите по ссылке в письме для завершения регистрации.');
     }

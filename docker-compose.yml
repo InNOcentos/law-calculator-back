@@ -30,12 +30,12 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
     container_name: app
     restart: unless-stopped
     env_file: .env
     volumes:
-      - ./src:/app/src
+      - .:/app
+      - /app/node_modules
     depends_on:
       - postgres
       - redis
@@ -43,6 +43,9 @@ services:
       - '3000:3000'
     networks:
       - app-network
+    volumes:
+      - .:/app
+
 
 networks:
   app-network:

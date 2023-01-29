@@ -1,13 +1,4 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpException,
-  HttpStatus,
-  LoggerService,
-  UnprocessableEntityException,
-  ValidationError,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, UnprocessableEntityException, ValidationError } from '@nestjs/common';
 import { Response } from 'express';
 
 @Catch()
@@ -20,15 +11,12 @@ export class ApplicationExceptionFilter implements ExceptionFilter {
 
     /* HTTP validation exception */
     if (ApplicationExceptionFilter.assertValidationException(exception)) {
-      console.log(123);
       const exceptionDto = this.convertValidationErrorToDTO(exception as any);
-      console.log(exceptionDto);
       return response.status(HttpStatus.UNPROCESSABLE_ENTITY).send(exceptionDto);
     }
 
     /* HTTP exception case */
     if (ApplicationExceptionFilter.assertHttpException(exception)) {
-      console.log(321);
       return response.status(HttpStatus.SERVICE_UNAVAILABLE).send({ dateTime: new Date().toISOString(), errors: [{ message: exception.message }] });
     }
 
@@ -38,7 +26,6 @@ export class ApplicationExceptionFilter implements ExceptionFilter {
   }
 
   private convertValidationErrorToDTO(exception: any): any {
-    // console.log(exception.response)
     const validationErrors = [];
     for (const error of exception.response['message']) {
       this.serializeValidationError(error, validationErrors);
@@ -60,17 +47,10 @@ export class ApplicationExceptionFilter implements ExceptionFilter {
       const constraints = Object.keys(error.constraints);
       if (constraints && constraints.length) {
         for (const constraint of constraints) {
-          if (constraint.toLowerCase().startsWith('is')) {
-            errorStore.push({
-              fieldName: parentName + error?.property,
-              message: error.constraints[constraint],
-            });
-          } else {
-            errorStore.push({
-              fieldName: parentName + error?.property,
-              message: error.constraints[constraint],
-            });
-          }
+          errorStore.push({
+            fieldName: parentName + error?.property,
+            message: error.constraints[constraint],
+          });
         }
       }
     }
