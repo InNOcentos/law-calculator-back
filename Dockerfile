@@ -1,17 +1,11 @@
-FROM node:16
+FROM node:18-alpine
 
-WORKDIR /app
-
-COPY ["package.json", "package-lock.json",".env", "tsconfig.json", "nest-cli.json", "./"]
-
-RUN npm install rimraf
-
-RUN npm install -g @nestjs/cli
-
-RUN npm install
+WORKDIR /usr/src/app
 
 COPY . .
 
+RUN npm install
+
 RUN npm run build
 
-CMD npm run start:dev
+CMD ["npm", "run", "start:dev"]
