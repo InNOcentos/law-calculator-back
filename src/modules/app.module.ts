@@ -6,10 +6,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { databaseOptionsFactory } from './database/options/factory';
 import { AuthModule } from './auth/auth.module';
 import { BullModule } from '@nestjs/bull';
-import { MAIL_QUEUE_NAME } from './app.types';
 import { UserModule } from './user/user.module';
 import { APP_FILTER } from '@nestjs/core';
 import { ApplicationExceptionFilter } from './common/filters/application.filter';
+import { CbrModule } from './cbr/cbr.module';
 
 @Module({
   imports: [
@@ -34,6 +34,7 @@ import { ApplicationExceptionFilter } from './common/filters/application.filter'
     UserModule,
     AuthModule,
     MailerModule,
+    CbrModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ApplicationExceptionFilter }],
 })

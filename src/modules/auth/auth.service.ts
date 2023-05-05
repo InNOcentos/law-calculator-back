@@ -38,7 +38,6 @@ export class AuthService {
       email: createUserDto.email,
       passwordHash,
     });
-
     try {
       await this.mailQueue.add(MailerProcess.Confirmation, {
         user,
