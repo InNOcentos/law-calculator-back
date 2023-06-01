@@ -1,26 +1,34 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import * as moment from 'moment';
+import 'moment-timezone';
+
+moment.locale('ru');
+moment.tz('Europe/Moscow').format();
 
 @Injectable()
 export class CbrService {
   constructor(private readonly httpService: HttpService) {}
 
   async getLastKeyRate(): Promise<any> {
-    console.log(123);
-    const url = `https://sbcharts.investing.com/events_charts/us/554.json`;
-    const keyRate = await firstValueFrom(this.httpService.get(url));
+    const req = await firstValueFrom(this.httpService.get('https://anytools.pro/files/data/finance/cbrf.csv'));
 
-    const result = [];
+    return req.data
+      .split(/\r?\n/)
+      .map((kr) => {
+        const [date, rate] = kr.split(';');
+        const tmpDate = date.split('.');
 
-    keyRate.data.data.forEach((e) => {
-      if (result[result.length - 1]?.rate !== e[1]) {
-        result.push({
-          rate: e[1],
-          timestamp: e[0],
-        });
-      }
-    });
-    return result;
+        if (!tmpDate[0]) return null;
+
+        const newDate = moment(`${tmpDate[2]}-${tmpDate[1] - 1}-${tmpDate[0]}`);
+
+        return {
+          rate: +rate,
+          timestamp: +newDate.format('x'),
+        };
+      })
+      .filter((e) => !!e);
   }
 }
